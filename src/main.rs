@@ -1,28 +1,58 @@
 use std::env;
 use std::fs;
+use std::path::PathBuf;
+use std::error::Error;
+use std::process;
+use gis_utils::{ check_shp, check_tif };
 
 fn main() {
-    // Get the current working directory
-    let current_dir = env::current_dir().expect("Unable to determine current directory");
+    let config = Config::build().unwrap_or_else(|e| {
+        eprintln!("Problem building config: {e}");
+        process::exit(1);
+    });
 
-    // Read the entries in that directory
-    let entries = fs::read_dir(&current_dir).expect("Unable to read directory contents");
+    let shp_found = check_shp(&config.entries);
 
-    // Check whether any entry is a file with a .shp extension
-    let found = entries
-        .filter_map(|entry| entry.ok()) // ignore entries that errored out
-        .any(|entry| {
-            let path = entry.path();
-            path.is_file()
-                && path
-                    .extension()
-                    .map(|ext| ext.eq_ignore_ascii_case("shp"))
-                    .unwrap_or(false)
-        });
+    let tif_found = check_tif(&config.entries);
 
-    if found {
-        println!("Yes");
+    if shp_found {
+        println!("Yes, .shp file found in {}", config.current_dir.to_str().unwrap());
     } else {
-        println!("No");
+        println!("No, .shp file not found in {}", config.current_dir.to_str().unwrap());
+    }
+
+    if tif_found {
+        println!("Yes, .tif file found in {}", config.current_dir.to_str().unwrap());
+    } else {
+        println!("No, .tif file not found in {}", config.current_dir.to_str().unwrap());
+    }
+
+    let mut counter = 1;
+    for arg_n in &config.args {
+        println!("Argument #{}; {}", counter, arg_n);
+        counter += 1;
+    }
+}
+
+struct Config {
+    current_dir: PathBuf,
+    args: Vec<String>,
+    entries: Vec<PathBuf>,
+}
+
+impl Config {
+    fn build() -> Result<Config, Box<dyn Error>> {
+        let current_dir = env::current_dir()?;
+        let args = env::args().skip(1).collect();
+        let entries = fs::read_dir(&current_dir)
+            .unwrap()
+            .filter_map(|entry| { entry.ok() })
+            .map(|entry| { entry.path() })
+            .collect();
+        Ok(Config {
+            current_dir,
+            args,
+            entries,
+        })
     }
 }

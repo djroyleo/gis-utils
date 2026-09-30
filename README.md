@@ -1,0 +1,1 @@
+`gis-utils` is a CLI for simple and basic GIS commands intented into increase QOL for GIS practicioners.
