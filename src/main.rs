@@ -1,9 +1,5 @@
-use std::env;
-use std::fs;
-use std::path::PathBuf;
-use std::error::Error;
 use std::process;
-use gis_utils::{ check_shp, check_tif };
+use gis_utils::{ check_shp, check_tif, Config };
 
 fn main() {
     let config = Config::build().unwrap_or_else(|e| {
@@ -31,28 +27,5 @@ fn main() {
     for arg_n in &config.args {
         println!("Argument #{}; {}", counter, arg_n);
         counter += 1;
-    }
-}
-
-struct Config {
-    current_dir: PathBuf,
-    args: Vec<String>,
-    entries: Vec<PathBuf>,
-}
-
-impl Config {
-    fn build() -> Result<Config, Box<dyn Error>> {
-        let current_dir = env::current_dir()?;
-        let args = env::args().skip(1).collect();
-        let entries = fs::read_dir(&current_dir)
-            .unwrap()
-            .filter_map(|entry| { entry.ok() })
-            .map(|entry| { entry.path() })
-            .collect();
-        Ok(Config {
-            current_dir,
-            args,
-            entries,
-        })
     }
 }
